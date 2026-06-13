@@ -1,8 +1,7 @@
 class AppConstants {
   static const String openRouterUrl =
       'https://openrouter.ai/api/v1/chat/completions';
-  static const String openRouterModel =
-      'meta-llama/llama-3.3-70b-instruct:free';
+  static const String openRouterModel = 'openai/gpt-oss-20b:free';
 
   static const String groqApiKeyKey = 'openrouter_api_key';
   static const String messagesKey = 'chat_messages';
