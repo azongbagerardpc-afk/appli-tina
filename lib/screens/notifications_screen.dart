@@ -16,22 +16,26 @@ class NotificationsScreen extends StatelessWidget {
           appBar: AppBar(
             title: Row(
               children: [
-                const Text('Notifications'),
+                const Text('Alertes'),
                 if (service.unreadCount > 0) ...[
                   const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppTheme.primary,
+                      gradient: const LinearGradient(
+                        colors: [AppTheme.primary, AppTheme.accent],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       '${service.unreadCount}',
                       style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold),
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700),
                     ),
                   ),
                 ],
@@ -41,12 +45,12 @@ class NotificationsScreen extends StatelessWidget {
               if (service.isPermissionGranted) ...[
                 if (service.notifications.isNotEmpty)
                   IconButton(
-                    icon: const Icon(Icons.done_all, size: 20),
+                    icon: const Icon(Icons.done_all_rounded, size: 20),
                     onPressed: service.markAllRead,
                     tooltip: 'Tout marquer comme lu',
                   ),
                 IconButton(
-                  icon: const Icon(Icons.refresh, size: 20),
+                  icon: const Icon(Icons.refresh_rounded, size: 20),
                   onPressed: service.recheckPermission,
                   tooltip: 'Actualiser',
                 ),
@@ -57,7 +61,8 @@ class NotificationsScreen extends StatelessWidget {
               ? _PermissionRequest(service: service)
               : service.notifications.isEmpty
                   ? const _EmptyState()
-                  : _NotificationList(notifications: service.notifications),
+                  : _NotificationList(
+                      notifications: service.notifications),
         );
       },
     );
@@ -81,12 +86,19 @@ class _PermissionRequest extends StatelessWidget {
               height: 80,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppTheme.primary.withOpacity(0.1),
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.primary.withOpacity(0.2),
+                    AppTheme.accent.withOpacity(0.15),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 border: Border.all(
-                    color: AppTheme.primary.withOpacity(0.3), width: 2),
+                    color: AppTheme.primary.withOpacity(0.35), width: 1.5),
               ),
-              child: const Icon(Icons.notifications_active,
-                  color: AppTheme.primary, size: 36),
+              child: const Icon(Icons.notifications_active_rounded,
+                  color: AppTheme.primary, size: 34),
             ),
             const SizedBox(height: 24),
             const Text(
@@ -94,21 +106,23 @@ class _PermissionRequest extends StatelessWidget {
               style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
-                  fontWeight: FontWeight.bold),
+                  fontWeight: FontWeight.w700),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
             const Text(
               'Pour que Tina te prévienne de tes messages WhatsApp, Facebook, Instagram et TikTok, elle a besoin d\'accéder à tes notifications.',
               style: TextStyle(
-                  color: Colors.white54, fontSize: 14, height: 1.55),
+                  color: AppTheme.textSecondary,
+                  fontSize: 14,
+                  height: 1.55),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             const Text(
-              'Tes messages restent privés, Tina ne lit que le nom de l\'expéditeur et la notification.',
+              'Tes messages restent privés. Tina ne lit que le nom de l\'expéditeur et le résumé.',
               style: TextStyle(
-                  color: Colors.white38, fontSize: 12, height: 1.5),
+                  color: AppTheme.textTertiary, fontSize: 12, height: 1.5),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
@@ -116,17 +130,7 @@ class _PermissionRequest extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: service.requestPermission,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primary,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text(
-                  'Activer les notifications',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
+                child: const Text('Activer les alertes'),
               ),
             ),
             const SizedBox(height: 12),
@@ -134,7 +138,8 @@ class _PermissionRequest extends StatelessWidget {
               onPressed: service.recheckPermission,
               child: const Text(
                 'J\'ai déjà activé, vérifier',
-                style: TextStyle(color: Colors.white38, fontSize: 13),
+                style: TextStyle(
+                    color: AppTheme.textTertiary, fontSize: 13),
               ),
             ),
           ],
@@ -149,15 +154,29 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.notifications_off_outlined,
-              color: Colors.white12, size: 48),
-          SizedBox(height: 12),
-          Text('Aucune notification pour l\'instant',
-              style: TextStyle(color: Colors.white38)),
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppTheme.surfaceVariant,
+              border: Border.all(color: AppTheme.border),
+            ),
+            child: const Icon(Icons.notifications_off_outlined,
+                color: AppTheme.textTertiary, size: 28),
+          ),
+          const SizedBox(height: 16),
+          const Text('Aucune alerte pour l\'instant',
+              style: TextStyle(
+                  color: AppTheme.textSecondary, fontSize: 14)),
+          const SizedBox(height: 6),
+          const Text('Les nouvelles notifications apparaîtront ici',
+              style: TextStyle(
+                  color: AppTheme.textTertiary, fontSize: 12)),
         ],
       ),
     );
@@ -189,15 +208,28 @@ class _NotifCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: notif.isRead ? AppTheme.surface : AppTheme.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
-        border: notif.isRead
-            ? null
-            : Border.all(color: AppTheme.primary.withOpacity(0.18)),
+        border: Border.all(
+          color: notif.isRead
+              ? AppTheme.border
+              : AppTheme.primary.withOpacity(0.2),
+        ),
       ),
       child: ListTile(
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        leading: Text(notif.appIcon,
-            style: const TextStyle(fontSize: 26)),
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppTheme.background,
+            border: Border.all(color: AppTheme.border),
+          ),
+          child: Center(
+            child: Text(notif.appIcon,
+                style: const TextStyle(fontSize: 20)),
+          ),
+        ),
         title: Row(
           children: [
             Expanded(
@@ -205,8 +237,9 @@ class _NotifCard extends StatelessWidget {
                 notif.title.isNotEmpty ? notif.title : notif.appName,
                 style: TextStyle(
                   color: Colors.white,
-                  fontWeight:
-                      notif.isRead ? FontWeight.normal : FontWeight.bold,
+                  fontWeight: notif.isRead
+                      ? FontWeight.w400
+                      : FontWeight.w600,
                   fontSize: 13,
                 ),
                 maxLines: 1,
@@ -216,19 +249,33 @@ class _NotifCard extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               _formatTime(notif.timestamp),
-              style: const TextStyle(color: Colors.white30, fontSize: 11),
+              style: const TextStyle(
+                  color: AppTheme.textTertiary, fontSize: 11),
             ),
           ],
         ),
         subtitle: notif.body.isNotEmpty
-            ? Text(
-                notif.body,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style:
-                    const TextStyle(color: Colors.white54, fontSize: 12),
+            ? Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  notif.body,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: AppTheme.textSecondary, fontSize: 12, height: 1.4),
+                ),
               )
             : null,
+        trailing: notif.isRead
+            ? null
+            : Container(
+                width: 7,
+                height: 7,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.primary,
+                ),
+              ),
       ),
     );
   }

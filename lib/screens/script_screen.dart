@@ -17,13 +17,13 @@ class _ScriptScreenState extends State<ScriptScreen> {
   bool _isLoading = false;
   String? _currentTopic;
 
-  static const List<String> _quickTopics = [
-    'Geste viral d\'un joueur après un match',
-    'Polémique arbitrage ou VAR',
-    'Transfert inattendu ou choc',
-    'Défaite surprise d\'un grand club',
-    'Record battu ou statistique folle',
-    'Incident insolite sur ou hors du terrain',
+  static const List<({String label, IconData icon})> _quickTopics = [
+    (label: 'Geste viral d\'un joueur', icon: Icons.sports_soccer),
+    (label: 'Polémique arbitrage ou VAR', icon: Icons.gavel),
+    (label: 'Transfert inattendu ou choc', icon: Icons.swap_horiz_rounded),
+    (label: 'Défaite surprise d\'un grand club', icon: Icons.trending_down),
+    (label: 'Record battu ou stat folle', icon: Icons.bar_chart),
+    (label: 'Incident insolite sur le terrain', icon: Icons.warning_amber_rounded),
   ];
 
   Future<void> _generate(String topic) async {
@@ -33,9 +33,7 @@ class _ScriptScreenState extends State<ScriptScreen> {
       _script = null;
       _currentTopic = topic;
     });
-
     final script = await _groqService.generateScript(topic);
-
     setState(() {
       _script = script;
       _isLoading = false;
@@ -46,146 +44,237 @@ class _ScriptScreenState extends State<ScriptScreen> {
     if (_script == null) return;
     Clipboard.setData(ClipboardData(text: _script!));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Script copié dans le presse-papiers'),
-        backgroundColor: AppTheme.primary,
-        behavior: SnackBarBehavior.floating,
-      ),
+      const SnackBar(content: Text('Script copié')),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Générateur de scripts')),
+      appBar: AppBar(
+        title: const Text('Scripts TikTok'),
+        actions: [
+          if (_script != null) ...[
+            IconButton(
+              icon: const Icon(Icons.copy_rounded, size: 20),
+              onPressed: _copyScript,
+              tooltip: 'Copier',
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded,
+                  size: 20, color: AppTheme.textTertiary),
+              onPressed: () =>
+                  _generate(_currentTopic ?? _controller.text),
+              tooltip: 'Régénérer',
+            ),
+          ],
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Quel est le sujet ?',
-              style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(
-                      hintText: 'Ex: Messi donne ses maillots aux Mauritaniens',
-                      hintStyle: TextStyle(color: Colors.white30),
+            // Champ sujet
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppTheme.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'SUJET DU SCRIPT',
+                    style: TextStyle(
+                      color: AppTheme.textTertiary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
                     ),
-                    onSubmitted: (v) => _generate(v.trim()),
                   ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () => _generate(_controller.text.trim()),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primary,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _controller,
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 14),
+                          decoration: const InputDecoration(
+                            hintText:
+                                'Ex: Messi offre ses maillots aux fans togolais',
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            filled: false,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          onSubmitted: (v) => _generate(v.trim()),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      GestureDetector(
+                        onTap: () => _generate(_controller.text.trim()),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 18, vertical: 10),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [AppTheme.primary, AppTheme.accent],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Text(
+                            'Go',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  child: const Text('Go',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ],
+                ],
+              ),
             ),
             const SizedBox(height: 20),
+
+            // Sujets rapides
             const Text(
               'SUJETS RAPIDES',
               style: TextStyle(
-                  color: Colors.white30,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1),
+                color: AppTheme.textTertiary,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+              ),
             ),
             const SizedBox(height: 10),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: _quickTopics
-                  .map((topic) => GestureDetector(
-                        onTap: () => _generate(topic),
+                  .map((t) => GestureDetector(
+                        onTap: () => _generate(t.label),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 7),
+                              horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
+                            color: AppTheme.surfaceVariant,
                             border: Border.all(
-                                color: AppTheme.primary.withOpacity(0.35)),
+                                color: AppTheme.border),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: Text(
-                            topic,
-                            style: TextStyle(
-                                color: AppTheme.primary, fontSize: 12),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(t.icon,
+                                  size: 13,
+                                  color: AppTheme.primary),
+                              const SizedBox(width: 5),
+                              Text(
+                                t.label,
+                                style: const TextStyle(
+                                    color: AppTheme.textSecondary,
+                                    fontSize: 12),
+                              ),
+                            ],
                           ),
                         ),
                       ))
                   .toList(),
             ),
             const SizedBox(height: 28),
+
+            // États : loading / script / vide
             if (_isLoading)
-              const Center(
+              Center(
                 child: Column(
                   children: [
-                    CircularProgressIndicator(color: AppTheme.primary),
-                    SizedBox(height: 14),
-                    Text(
+                    const SizedBox(height: 20),
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          colors: [AppTheme.primary, AppTheme.accent],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primary.withOpacity(0.4),
+                            blurRadius: 24,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.auto_awesome,
+                          color: Colors.white, size: 24),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
                       'Tina génère ton script...',
-                      style: TextStyle(color: Colors.white54),
+                      style: TextStyle(
+                          color: AppTheme.textSecondary, fontSize: 14),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Ça prend 5 à 15 secondes',
+                      style: TextStyle(
+                          color: AppTheme.textTertiary, fontSize: 12),
                     ),
                   ],
                 ),
               )
             else if (_script != null) ...[
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppTheme.success,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
                   const Text(
                     'Script prêt',
                     style: TextStyle(
                         color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14),
                   ),
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.copy,
-                            color: AppTheme.primary, size: 20),
-                        onPressed: _copyScript,
-                        tooltip: 'Copier',
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.refresh,
-                            color: Colors.white38, size: 20),
-                        onPressed: () =>
-                            _generate(_currentTopic ?? _controller.text),
-                        tooltip: 'Régénérer',
-                      ),
-                    ],
+                  const Spacer(),
+                  Text(
+                    '${_script!.length} car.',
+                    style: TextStyle(
+                      color: _script!.length > 1800
+                          ? const Color(0xFFEF4444)
+                          : AppTheme.textTertiary,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AppTheme.surfaceVariant,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                      color: AppTheme.primary.withOpacity(0.2)),
+                      color: AppTheme.primary.withOpacity(0.25)),
                 ),
                 child: SelectableText(
                   _script!,
@@ -194,20 +283,34 @@ class _ScriptScreenState extends State<ScriptScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _copyScript,
-                  icon: const Icon(Icons.copy, size: 18),
-                  label: const Text('Copier le script complet'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primary,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _copyScript,
+                      icon: const Icon(Icons.copy_rounded, size: 16),
+                      label: const Text('Copier'),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 10),
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        _generate(_currentTopic ?? _controller.text),
+                    icon: const Icon(Icons.refresh_rounded,
+                        size: 16, color: AppTheme.textSecondary),
+                    label: const Text(
+                      'Régénérer',
+                      style: TextStyle(color: AppTheme.textSecondary),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppTheme.border),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
+                    ),
+                  ),
+                ],
               ),
             ],
           ],

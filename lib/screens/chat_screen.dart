@@ -6,9 +6,12 @@ import '../models/message.dart';
 import '../services/groq_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/message_bubble.dart';
+import '../widgets/tina_logo.dart';
 import '../config/constants.dart';
 import '../config/theme.dart';
 import '../services/sofascore_service.dart';
+import '../services/french_news_service.dart';
+import '../services/connector_base.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -45,12 +48,12 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.12).animate(
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
     _ringController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1400),
       vsync: this,
     );
     _ringAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -67,33 +70,36 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   Future<void> _fetchLiveContext() async {
     try {
       final service = SofascoreService();
+      final newsService = FrenchNewsService();
       final results = await Future.wait([
         service.getTodayMatches(),
         service.getYesterdayMatches(),
-        service.getNews(),
+        newsService.fetchNews(limit: 8),
       ]);
       final today = results[0] as List<Match>;
       final yesterday = results[1] as List<Match>;
-      final news = results[2] as List<NewsItem>;
+      final news = results[2] as List<NewsArticle>;
 
       final buf = StringBuffer();
 
       if (today.isNotEmpty) {
         buf.writeln('Matchs du jour :');
         for (final m in today.take(8)) {
-          buf.writeln('- ${m.homeTeam} ${m.scoreDisplay} ${m.awayTeam} (${m.tournament})');
+          buf.writeln(
+              '- ${m.homeTeam} ${m.scoreDisplay} ${m.awayTeam} (${m.tournament})');
         }
       }
       if (yesterday.isNotEmpty) {
         buf.writeln('Résultats d\'hier :');
         for (final m in yesterday.where((m) => m.isFinished).take(6)) {
-          buf.writeln('- ${m.homeTeam} ${m.scoreDisplay} ${m.awayTeam} (${m.tournament})');
+          buf.writeln(
+              '- ${m.homeTeam} ${m.scoreDisplay} ${m.awayTeam} (${m.tournament})');
         }
       }
       if (news.isNotEmpty) {
-        buf.writeln('Dernières news football :');
-        for (final n in news.take(8)) {
-          buf.writeln('- ${n.headline}');
+        buf.writeln('Dernières news football (en français) :');
+        for (final n in news) {
+          buf.writeln('- ${n.title}');
         }
       }
 
@@ -142,7 +148,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   void _checkApiKey() {
     final key = StorageService.getGroqApiKey();
     if (key == null || key.isEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _showApiKeyDialog());
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _showApiKeyDialog());
     }
   }
 
@@ -155,7 +162,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   void _addWelcomeMessage() {
     final welcome = ChatMessage(
       id: const Uuid().v4(),
-      content: 'Salut Gérard ! Appuie sur le micro pour me parler.',
+      content: 'Salut Gérard. Appuie sur le micro pour me parler.',
       isUser: false,
       timestamp: DateTime.now(),
     );
@@ -238,7 +245,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     setState(() {
       _messages.add(tinaMsg);
       _isLoading = false;
-      _statusText = _autoSpeak ? 'Tina parle...' : 'Appuie pour me parler';
+      _statusText =
+          _autoSpeak ? 'Tina parle...' : 'Appuie pour me parler';
     });
     StorageService.saveMessages(_messages);
 
@@ -266,21 +274,29 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           children: [
             Container(
               margin: const EdgeInsets.symmetric(vertical: 10),
-              width: 40,
+              width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: AppTheme.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const Text('Conversation', style: TextStyle(color: Colors.white70, fontSize: 14)),
+            const Text(
+              'Conversation',
+              style: TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500),
+            ),
             const SizedBox(height: 8),
             Expanded(
               child: ListView.builder(
                 controller: scrollCtrl,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 itemCount: _messages.length,
-                itemBuilder: (_, i) => MessageBubble(message: _messages[i]),
+                itemBuilder: (_, i) =>
+                    MessageBubble(message: _messages[i]),
               ),
             ),
           ],
@@ -296,9 +312,12 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppTheme.surfaceVariant,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
           'Active Tina',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(
+              color: Colors.white, fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -306,7 +325,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           children: [
             const Text(
               'Entre ta clé API OpenRouter pour activer Tina.',
-              style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
+              style: TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 13,
+                  height: 1.5),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -314,7 +336,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               obscureText: true,
               decoration: const InputDecoration(
                 hintText: 'sk-or-v1-...',
-                hintStyle: TextStyle(color: Colors.white30),
               ),
               style: const TextStyle(color: Colors.white),
             ),
@@ -331,7 +352,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             },
             child: const Text(
               'Enregistrer',
-              style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  color: AppTheme.primary, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -343,7 +365,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     for (int i = _messages.length - 1; i >= 0; i--) {
       if (!_messages[i].isUser && _messages[i].content.isNotEmpty) {
         final content = _messages[i].content;
-        return content.length > 130 ? '${content.substring(0, 130)}...' : content;
+        return content.length > 140
+            ? '${content.substring(0, 140)}...'
+            : content;
       }
     }
     return '';
@@ -358,23 +382,36 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         elevation: 0,
         title: Row(
           children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [AppTheme.primary, Color(0xFF00BFA5)],
-                ),
-              ),
-              child: const Icon(Icons.auto_awesome, size: 16, color: Colors.black),
-            ),
-            const SizedBox(width: 8),
-            const Column(
+            const TinaLogo(size: 32),
+            const SizedBox(width: 10),
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Tina', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
-                Text('En ligne', style: TextStyle(fontSize: 10, color: AppTheme.primary)),
+                const Text(
+                  'Tina',
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white),
+                ),
+                Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppTheme.success,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Text(
+                      'En ligne',
+                      style: TextStyle(
+                          fontSize: 10, color: AppTheme.success),
+                    ),
+                  ],
+                ),
               ],
             ),
           ],
@@ -382,18 +419,22 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         actions: [
           IconButton(
             icon: Icon(
-              _autoSpeak ? Icons.volume_up : Icons.volume_off,
+              _autoSpeak ? Icons.volume_up_rounded : Icons.volume_off_rounded,
               size: 20,
-              color: _autoSpeak ? AppTheme.primary : Colors.white38,
+              color: _autoSpeak
+                  ? AppTheme.primary
+                  : AppTheme.textTertiary,
             ),
             onPressed: () => setState(() => _autoSpeak = !_autoSpeak),
           ),
           IconButton(
-            icon: const Icon(Icons.vpn_key_outlined, size: 20, color: Colors.white54),
+            icon: const Icon(Icons.vpn_key_outlined,
+                size: 20, color: AppTheme.textTertiary),
             onPressed: _showApiKeyDialog,
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.white54),
+            icon: const Icon(Icons.delete_outline_rounded,
+                size: 20, color: AppTheme.textTertiary),
             onPressed: () {
               setState(() => _messages = []);
               StorageService.saveMessages([]);
@@ -411,71 +452,72 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               children: [
                 // Avatar animé avec anneau
                 SizedBox(
-                  width: 180,
-                  height: 180,
+                  width: 190,
+                  height: 190,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Anneau externe animé (quand écoute)
                       if (_isListening)
                         AnimatedBuilder(
                           animation: _ringAnimation,
                           builder: (_, __) => Container(
-                            width: 140 + (_ringAnimation.value * 40),
-                            height: 140 + (_ringAnimation.value * 40),
+                            width: 145 + (_ringAnimation.value * 45),
+                            height: 145 + (_ringAnimation.value * 45),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: AppTheme.primary.withOpacity(1 - _ringAnimation.value),
-                                width: 2,
+                                color: AppTheme.primary
+                                    .withOpacity(1 - _ringAnimation.value),
+                                width: 1.5,
                               ),
                             ),
                           ),
                         ),
-                      // Avatar principal
                       ScaleTransition(
                         scale: _pulseAnimation,
-                        child: Container(
-                          width: 130,
-                          height: 130,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: const LinearGradient(
-                              colors: [AppTheme.primary, Color(0xFF00BFA5)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.primary.withOpacity(_isListening || _isLoading ? 0.55 : 0.25),
-                                blurRadius: _isListening || _isLoading ? 50 : 25,
-                                spreadRadius: _isListening || _isLoading ? 8 : 3,
-                              ),
-                            ],
-                          ),
-                          child: const Icon(Icons.auto_awesome, size: 52, color: Colors.black),
+                        child: TinaLogo(
+                          size: 130,
+                          showGlow: _isListening || _isLoading,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 22),
                 // Statut
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
-                  child: Text(
-                    _isLoading ? 'En train de répondre...' : _statusText,
+                  child: Row(
                     key: ValueKey(_isLoading ? 'loading' : _statusText),
-                    style: TextStyle(
-                      color: _isListening
-                          ? const Color(0xFFFF5252)
-                          : _isLoading
-                              ? AppTheme.primary
-                              : Colors.white60,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w400,
-                      letterSpacing: 0.3,
-                    ),
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_isListening)
+                        Container(
+                          width: 7,
+                          height: 7,
+                          margin: const EdgeInsets.only(right: 7),
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Color(0xFFEF4444),
+                          ),
+                        ),
+                      Text(
+                        _isLoading
+                            ? 'En train de répondre...'
+                            : _statusText,
+                        style: TextStyle(
+                          color: _isListening
+                              ? const Color(0xFFEF4444)
+                              : _isLoading
+                                  ? AppTheme.primary
+                                  : AppTheme.textTertiary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -483,16 +525,18 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                 if (_lastTinaMessage.isNotEmpty)
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 28),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 14),
                     decoration: BoxDecoration(
-                      color: AppTheme.surfaceVariant.withOpacity(0.7),
+                      color: AppTheme.surfaceVariant,
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: Colors.white.withOpacity(0.06)),
+                      border:
+                          Border.all(color: AppTheme.border),
                     ),
                     child: Text(
                       _lastTinaMessage,
                       style: const TextStyle(
-                        color: Colors.white70,
+                        color: AppTheme.textSecondary,
                         fontSize: 13,
                         height: 1.5,
                       ),
@@ -505,22 +549,33 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
           // Zone contrôles bas
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
             child: Column(
               children: [
-                // Bouton micro central (grand)
+                // Bouton micro
                 GestureDetector(
                   onTap: _toggleListening,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    width: 78,
-                    height: 78,
+                    width: 76,
+                    height: 76,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: _isListening ? const Color(0xFFFF5252) : AppTheme.primary,
+                      gradient: _isListening
+                          ? null
+                          : const LinearGradient(
+                              colors: [AppTheme.primary, AppTheme.accent],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                      color: _isListening
+                          ? const Color(0xFFEF4444)
+                          : null,
                       boxShadow: [
                         BoxShadow(
-                          color: (_isListening ? const Color(0xFFFF5252) : AppTheme.primary)
+                          color: (_isListening
+                                  ? const Color(0xFFEF4444)
+                                  : AppTheme.primary)
                               .withOpacity(0.45),
                           blurRadius: 28,
                           spreadRadius: 4,
@@ -528,13 +583,15 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       ],
                     ),
                     child: Icon(
-                      _isListening ? Icons.mic : Icons.mic_none,
-                      size: 34,
-                      color: Colors.black,
+                      _isListening
+                          ? Icons.mic_rounded
+                          : Icons.mic_none_rounded,
+                      size: 32,
+                      color: Colors.white,
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 22),
                 // Boutons secondaires
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -545,14 +602,16 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       onTap: _showChatHistory,
                     ),
                     _SecondaryBtn(
-                      icon: _showKeyboard ? Icons.keyboard_hide_rounded : Icons.keyboard_rounded,
+                      icon: _showKeyboard
+                          ? Icons.keyboard_hide_rounded
+                          : Icons.keyboard_rounded,
                       label: 'Clavier',
-                      onTap: () => setState(() => _showKeyboard = !_showKeyboard),
+                      onTap: () =>
+                          setState(() => _showKeyboard = !_showKeyboard),
                       active: _showKeyboard,
                     ),
                   ],
                 ),
-                // Champ texte (visible si clavier actif)
                 if (_showKeyboard) ...[
                   const SizedBox(height: 14),
                   Row(
@@ -566,9 +625,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                           autofocus: true,
                           decoration: const InputDecoration(
                             hintText: 'Écris à Tina...',
-                            hintStyle: TextStyle(color: Colors.white30),
                           ),
-                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 14),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -579,12 +638,26 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                           height: 44,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: _isLoading ? Colors.white12 : AppTheme.primary,
+                            gradient: _isLoading
+                                ? null
+                                : const LinearGradient(
+                                    colors: [
+                                      AppTheme.primary,
+                                      AppTheme.accent
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                            color: _isLoading
+                                ? AppTheme.border
+                                : null,
                           ),
                           child: Icon(
                             Icons.send_rounded,
-                            size: 20,
-                            color: _isLoading ? Colors.white24 : Colors.black,
+                            size: 18,
+                            color: _isLoading
+                                ? AppTheme.textTertiary
+                                : Colors.white,
                           ),
                         ),
                       ),
@@ -635,16 +708,24 @@ class _SecondaryBtn extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: active
-                  ? AppTheme.primary.withOpacity(0.15)
-                  : Colors.white.withOpacity(0.07),
+                  ? AppTheme.primary.withOpacity(0.12)
+                  : AppTheme.surface,
               border: Border.all(
-                color: active ? AppTheme.primary.withOpacity(0.5) : Colors.white24,
+                color: active ? AppTheme.primary.withOpacity(0.5) : AppTheme.border,
               ),
             ),
-            child: Icon(icon, size: 24, color: active ? AppTheme.primary : Colors.white60),
+            child: Icon(
+              icon,
+              size: 22,
+              color: active ? AppTheme.primary : AppTheme.textSecondary,
+            ),
           ),
           const SizedBox(height: 5),
-          Text(label, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+          Text(
+            label,
+            style: const TextStyle(
+                color: AppTheme.textTertiary, fontSize: 11),
+          ),
         ],
       ),
     );

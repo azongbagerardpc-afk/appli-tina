@@ -2,13 +2,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
-class NewsItem {
-  final String headline;
-  final String? description;
-
-  NewsItem({required this.headline, this.description});
-}
-
 class Match {
   final String id;
   final String homeTeam;
@@ -39,7 +32,8 @@ class Match {
     return 'vs';
   }
 
-  String get scriptTopic => '$homeTeam vs $awayTeam ($scoreDisplay) - $tournament';
+  String get scriptTopic =>
+      '$homeTeam vs $awayTeam ($scoreDisplay) - $tournament';
 }
 
 class SofascoreService {
@@ -99,32 +93,6 @@ class SofascoreService {
       }
     } catch (_) {}
     return [];
-  }
-
-  Future<List<NewsItem>> getNews() async {
-    final List<NewsItem> allNews = [];
-    final slugs = ['fifa.world', 'eng.1', 'esp.1', 'uefa.champions'];
-    for (final slug in slugs) {
-      try {
-        final response = await http
-            .get(Uri.parse('$_baseUrl/$slug/news?limit=5'))
-            .timeout(const Duration(seconds: 8));
-        if (response.statusCode == 200) {
-          final data = json.decode(response.body);
-          final articles = (data['articles'] as List?) ?? [];
-          for (final a in articles) {
-            final headline = a['headline'] as String?;
-            if (headline != null && headline.isNotEmpty) {
-              allNews.add(NewsItem(
-                headline: headline,
-                description: a['description'] as String?,
-              ));
-            }
-          }
-        }
-      } catch (_) {}
-    }
-    return allNews;
   }
 
   Match? _parseEvent(dynamic event, String leagueName) {

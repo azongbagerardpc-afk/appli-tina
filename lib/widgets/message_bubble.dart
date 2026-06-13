@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/message.dart';
 import '../config/theme.dart';
+import 'tina_logo.dart';
 
 class MessageBubble extends StatelessWidget {
   final ChatMessage message;
@@ -18,7 +19,7 @@ class MessageBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isUser) ...[
-            _TinaAvatar(),
+            const TinaLogo(size: 28),
             const SizedBox(width: 8),
           ],
           Flexible(
@@ -26,7 +27,8 @@ class MessageBubble extends StatelessWidget {
               constraints: BoxConstraints(
                 maxWidth: MediaQuery.of(context).size.width * 0.75,
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: isUser ? AppTheme.primary : AppTheme.surfaceVariant,
                 borderRadius: BorderRadius.only(
@@ -41,8 +43,8 @@ class MessageBubble extends StatelessWidget {
                 children: [
                   Text(
                     message.content,
-                    style: TextStyle(
-                      color: isUser ? Colors.black : Colors.white,
+                    style: const TextStyle(
+                      color: Colors.white,
                       fontSize: 14,
                       height: 1.45,
                     ),
@@ -51,7 +53,7 @@ class MessageBubble extends StatelessWidget {
                   Text(
                     DateFormat('HH:mm').format(message.timestamp),
                     style: TextStyle(
-                      color: isUser ? Colors.black45 : Colors.white30,
+                      color: Colors.white.withOpacity(0.4),
                       fontSize: 10,
                     ),
                   ),
@@ -62,25 +64,6 @@ class MessageBubble extends StatelessWidget {
           if (isUser) const SizedBox(width: 8),
         ],
       ),
-    );
-  }
-}
-
-class _TinaAvatar extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 28,
-      height: 28,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [AppTheme.primary, Color(0xFF00BFA5)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: const Icon(Icons.auto_awesome, size: 14, color: Colors.black),
     );
   }
 }
@@ -119,10 +102,11 @@ class _TypingIndicatorState extends State<TypingIndicator>
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          _TinaAvatar(),
+          const TinaLogo(size: 28),
           const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: AppTheme.surfaceVariant,
               borderRadius: const BorderRadius.only(
