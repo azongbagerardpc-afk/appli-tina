@@ -2,8 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.VIBRATE"/>
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
     <application
         android:label="Tina"
@@ -30,17 +28,6 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2"/>
-
-        <!-- Service pour lire les notifications WhatsApp, Facebook, Instagram, TikTok -->
-        <service
-            android:name="com.nizwar.notification_listener_service.NotificationListenerPlugin"
-            android:label="@string/app_name"
-            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.service.notification.NotificationListenerService"/>
-            </intent-filter>
-        </service>
 
     </application>
 </manifest>

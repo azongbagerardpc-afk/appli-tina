@@ -39,6 +39,10 @@ jobs:
         working-directory: /tmp/tina_base
         run: flutter pub get
 
+      - name: Analyser le code Dart
+        working-directory: /tmp/tina_base
+        run: flutter analyze || true
+
       - name: Compiler l'APK
         working-directory: /tmp/tina_base
         run: flutter build apk --release --no-tree-shake-icons
