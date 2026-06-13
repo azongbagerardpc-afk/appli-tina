@@ -12,7 +12,7 @@ class AppTheme {
       colorScheme: const ColorScheme.dark(
         primary: primary,
         surface: surface,
-        surfaceContainerHighest: surfaceVariant,
+        surfaceVariant: surfaceVariant,
         onPrimary: Colors.black,
         onSurface: Colors.white,
       ),
@@ -20,7 +20,7 @@ class AppTheme {
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: surface,
         indicatorColor: primary.withOpacity(0.2),
-        labelTextStyle: WidgetStateProperty.all(
+        labelTextStyle: MaterialStateProperty.all(
           const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
         ),
       ),
