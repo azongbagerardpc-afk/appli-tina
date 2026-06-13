@@ -8,14 +8,15 @@ class GroqService {
   Future<String?> sendMessage({
     required List<ChatMessage> messages,
     required String systemPrompt,
+    int retryCount = 0,
   }) async {
     final apiKey = StorageService.getGroqApiKey();
     if (apiKey == null || apiKey.isEmpty) {
       return 'Clé API manquante. Appuie sur l\'icône clé pour la configurer.';
     }
 
-    final recentMessages = messages.length > 20
-        ? messages.sublist(messages.length - 20)
+    final recentMessages = messages.length > 10
+        ? messages.sublist(messages.length - 10)
         : messages;
 
     final contents = recentMessages.map((m) => {
@@ -33,7 +34,7 @@ class GroqService {
           },
           'contents': contents,
           'generationConfig': {
-            'maxOutputTokens': 1024,
+            'maxOutputTokens': 800,
             'temperature': 0.7,
           },
         }),
@@ -42,8 +43,18 @@ class GroqService {
       if (response.statusCode == 200) {
         final data = json.decode(utf8.decode(response.bodyBytes));
         return data['candidates'][0]['content']['parts'][0]['text'];
+      } else if (response.statusCode == 429) {
+        if (retryCount < 2) {
+          await Future.delayed(const Duration(seconds: 30));
+          return sendMessage(
+            messages: messages,
+            systemPrompt: systemPrompt,
+            retryCount: retryCount + 1,
+          );
+        }
+        return 'Trop de messages d\'un coup. Attends 1 minute et réessaie.';
       } else if (response.statusCode == 400) {
-        return 'Clé API invalide. Vérifie ta clé Gemini.';
+        return 'Clé API invalide. Appuie sur l\'icône clé pour la reconfigurer.';
       } else {
         return 'Erreur API (${response.statusCode}). Réessaie dans quelques secondes.';
       }
