@@ -120,7 +120,7 @@ class _ChatScreenState extends State<ChatScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Pour activer Tina, entre ta clé API Groq gratuite.\n\n1. Va sur groq.com\n2. Crée un compte gratuit\n3. Va dans "API Keys" et crée une clé\n4. Copie la clé ici',
+              'Entre ta clé API Gemini pour activer Tina.',
               style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
             ),
             const SizedBox(height: 16),
@@ -128,7 +128,7 @@ class _ChatScreenState extends State<ChatScreen> {
               controller: keyController,
               obscureText: true,
               decoration: const InputDecoration(
-                hintText: 'gsk_...',
+                hintText: 'AQ.Ab8...',
                 hintStyle: TextStyle(color: Colors.white30),
               ),
               style: const TextStyle(color: Colors.white),

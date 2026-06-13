@@ -18,32 +18,32 @@ class GroqService {
         ? messages.sublist(messages.length - 20)
         : messages;
 
+    final contents = recentMessages.map((m) => {
+      'role': m.isUser ? 'user' : 'model',
+      'parts': [{'text': m.content}],
+    }).toList();
+
     try {
       final response = await http.post(
-        Uri.parse('${AppConstants.groqBaseUrl}/chat/completions'),
-        headers: {
-          'Authorization': 'Bearer $apiKey',
-          'Content-Type': 'application/json',
-        },
+        Uri.parse('${AppConstants.geminiBaseUrl}?key=$apiKey'),
+        headers: {'Content-Type': 'application/json'},
         body: json.encode({
-          'model': AppConstants.groqModel,
-          'messages': [
-            {'role': 'system', 'content': systemPrompt},
-            ...recentMessages.map((m) => {
-              'role': m.isUser ? 'user' : 'assistant',
-              'content': m.content,
-            }),
-          ],
-          'max_tokens': 1024,
-          'temperature': 0.7,
+          'system_instruction': {
+            'parts': [{'text': systemPrompt}],
+          },
+          'contents': contents,
+          'generationConfig': {
+            'maxOutputTokens': 1024,
+            'temperature': 0.7,
+          },
         }),
       ).timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final data = json.decode(utf8.decode(response.bodyBytes));
-        return data['choices'][0]['message']['content'];
-      } else if (response.statusCode == 401) {
-        return 'Clé API invalide. Vérifie ta clé sur groq.com.';
+        return data['candidates'][0]['content']['parts'][0]['text'];
+      } else if (response.statusCode == 400) {
+        return 'Clé API invalide. Vérifie ta clé Gemini.';
       } else {
         return 'Erreur API (${response.statusCode}). Réessaie dans quelques secondes.';
       }

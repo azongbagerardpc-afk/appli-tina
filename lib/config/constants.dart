@@ -1,9 +1,9 @@
 class AppConstants {
-  static const String groqBaseUrl = 'https://api.groq.com/openai/v1';
-  static const String groqModel = 'llama-3.3-70b-versatile';
+  static const String geminiBaseUrl =
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
   static const String sofascoreBaseUrl = 'https://api.sofascore.com/api/v1';
 
-  static const String groqApiKeyKey = 'groq_api_key';
+  static const String groqApiKeyKey = 'gemini_api_key';
   static const String messagesKey = 'chat_messages';
   static const String notificationsKey = 'saved_notifications';
 
