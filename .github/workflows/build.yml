@@ -35,6 +35,34 @@ jobs:
           cp android/app/src/main/AndroidManifest.xml \
              /tmp/tina_base/android/app/src/main/AndroidManifest.xml
 
+      - name: Patcher Gradle pour flutter_tts et speech_to_text
+        run: |
+          ROOT_GRADLE=/tmp/tina_base/android/build.gradle
+          APP_GRADLE=/tmp/tina_base/android/app/build.gradle
+
+          # Kotlin 1.9.10 — format ancien (ext.kotlin_version)
+          if grep -q "ext.kotlin_version" "$ROOT_GRADLE" 2>/dev/null; then
+            sed -i "s/ext.kotlin_version = '[^']*'/ext.kotlin_version = '1.9.10'/" "$ROOT_GRADLE"
+          fi
+          # Kotlin 1.9.10 — format nouveau (plugins DSL)
+          if grep -q "org.jetbrains.kotlin.android" "$ROOT_GRADLE" 2>/dev/null; then
+            sed -i 's/org.jetbrains.kotlin.android" version "[^"]*"/org.jetbrains.kotlin.android" version "1.9.10"/' "$ROOT_GRADLE"
+          fi
+
+          # S'assurer que compileSdk est 34 et minSdk 21
+          if grep -q "compileSdkVersion" "$APP_GRADLE" 2>/dev/null; then
+            sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 34/' "$APP_GRADLE"
+          fi
+          if grep -q "minSdkVersion [0-9]" "$APP_GRADLE" 2>/dev/null; then
+            sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/' "$APP_GRADLE"
+          fi
+
+          echo "=== android/build.gradle ==="
+          cat "$ROOT_GRADLE"
+          echo ""
+          echo "=== android/app/build.gradle ==="
+          cat "$APP_GRADLE"
+
       - name: Installer les dépendances
         working-directory: /tmp/tina_base
         run: flutter pub get
