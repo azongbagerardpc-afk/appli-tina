@@ -120,7 +120,7 @@ class _ChatScreenState extends State<ChatScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Entre ta clé API Gemini pour activer Tina.',
+              'Entre ta clé API OpenRouter pour activer Tina.',
               style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
             ),
             const SizedBox(height: 16),
@@ -128,7 +128,7 @@ class _ChatScreenState extends State<ChatScreen> {
               controller: keyController,
               obscureText: true,
               decoration: const InputDecoration(
-                hintText: 'AQ.Ab8...',
+                hintText: 'sk-or-v1-...',
                 hintStyle: TextStyle(color: Colors.white30),
               ),
               style: const TextStyle(color: Colors.white),

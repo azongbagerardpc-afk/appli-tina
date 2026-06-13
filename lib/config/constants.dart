@@ -1,9 +1,10 @@
 class AppConstants {
-  static const String geminiBaseUrl =
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-  static const String sofascoreBaseUrl = 'https://api.sofascore.com/api/v1';
+  static const String openRouterUrl =
+      'https://openrouter.ai/api/v1/chat/completions';
+  static const String openRouterModel =
+      'meta-llama/llama-3.3-70b-instruct:free';
 
-  static const String groqApiKeyKey = 'gemini_api_key';
+  static const String groqApiKeyKey = 'openrouter_api_key';
   static const String messagesKey = 'chat_messages';
   static const String notificationsKey = 'saved_notifications';
 

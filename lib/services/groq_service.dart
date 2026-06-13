@@ -5,8 +5,6 @@ import '../config/constants.dart';
 import 'storage_service.dart';
 
 class GroqService {
-  static DateTime? _lastRequestTime;
-
   Future<String?> sendMessage({
     required List<ChatMessage> messages,
     required String systemPrompt,
@@ -17,63 +15,51 @@ class GroqService {
       return 'Clé API manquante. Appuie sur l\'icône clé pour la configurer.';
     }
 
-    // Anti-burst : minimum 4 secondes entre chaque requête
-    final now = DateTime.now();
-    if (_lastRequestTime != null) {
-      final elapsed = now.difference(_lastRequestTime!);
-      if (elapsed.inMilliseconds < 4000) {
-        await Future.delayed(
-            Duration(milliseconds: 4000 - elapsed.inMilliseconds));
-      }
-    }
-    _lastRequestTime = DateTime.now();
-
-    // Envoyer seulement les 3 derniers messages pour économiser le quota
     final recentMessages =
-        messages.length > 3 ? messages.sublist(messages.length - 3) : messages;
+        messages.length > 6 ? messages.sublist(messages.length - 6) : messages;
 
-    final contents = recentMessages
-        .map((m) => {
-              'role': m.isUser ? 'user' : 'model',
-              'parts': [
-                {'text': m.content}
-              ],
-            })
-        .toList();
+    final openAiMessages = [
+      {'role': 'system', 'content': systemPrompt},
+      ...recentMessages.map((m) => {
+            'role': m.isUser ? 'user' : 'assistant',
+            'content': m.content,
+          }),
+    ];
 
     try {
       final response = await http
           .post(
-            Uri.parse('${AppConstants.geminiBaseUrl}?key=$apiKey'),
-            headers: {'Content-Type': 'application/json'},
+            Uri.parse(AppConstants.openRouterUrl),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $apiKey',
+              'HTTP-Referer': 'https://github.com/azongbagerardpc-afk/appli-tina',
+              'X-Title': 'Tina',
+            },
             body: json.encode({
-              'system_instruction': {
-                'parts': [{'text': systemPrompt}],
-              },
-              'contents': contents,
-              'generationConfig': {
-                'maxOutputTokens': 500,
-                'temperature': 0.7,
-              },
+              'model': AppConstants.openRouterModel,
+              'messages': openAiMessages,
+              'max_tokens': 800,
+              'temperature': 0.7,
             }),
           )
           .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final data = json.decode(utf8.decode(response.bodyBytes));
-        return data['candidates'][0]['content']['parts'][0]['text'];
+        return data['choices'][0]['message']['content'] as String?;
       } else if (response.statusCode == 429) {
-        if (retryCount < 3) {
-          await Future.delayed(const Duration(seconds: 15));
+        if (retryCount < 2) {
+          await Future.delayed(const Duration(seconds: 10));
           return sendMessage(
             messages: messages,
             systemPrompt: systemPrompt,
             retryCount: retryCount + 1,
           );
         }
-        return 'Trop de messages en peu de temps. Attends 1 minute et réessaie.';
-      } else if (response.statusCode == 400 || response.statusCode == 401) {
-        return 'Clé API invalide. Appuie sur l\'icône clé en haut à droite pour la reconfigurer.';
+        return 'Trop de messages. Attends quelques secondes et réessaie.';
+      } else if (response.statusCode == 401) {
+        return 'Clé API invalide. Appuie sur l\'icône clé en haut à droite.';
       } else {
         return 'Erreur réseau (${response.statusCode}). Réessaie dans quelques secondes.';
       }
