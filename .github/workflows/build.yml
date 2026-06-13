@@ -67,6 +67,23 @@ jobs:
           echo "=== android/app/build.gradle ==="
           cat "$APP_GRADLE"
 
+      - name: Intégrer l'icône Tina
+        run: |
+          ICON="${GITHUB_WORKSPACE}/assets/icon.png"
+          if [ -f "$ICON" ]; then
+            for entry in "mipmap-mdpi:48" "mipmap-hdpi:72" "mipmap-xhdpi:96" "mipmap-xxhdpi:144" "mipmap-xxxhdpi:192"; do
+              dir="${entry%%:*}"
+              size="${entry##*:}"
+              target="/tmp/tina_base/android/app/src/main/res/$dir"
+              mkdir -p "$target"
+              convert "$ICON" -resize "${size}x${size}" "$target/ic_launcher.png"
+              convert "$ICON" -resize "${size}x${size}" "$target/ic_launcher_round.png"
+            done
+            echo "Icônes Tina intégrées avec succès"
+          else
+            echo "Icône non trouvée, icônes par défaut conservées"
+          fi
+
       - name: Installer les dépendances
         working-directory: /tmp/tina_base
         run: flutter pub get
