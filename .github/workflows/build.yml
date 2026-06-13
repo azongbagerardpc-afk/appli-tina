@@ -29,10 +29,10 @@ jobs:
       - name: Créer la base Flutter
         run: |
           flutter create /tmp/tina_base --org com.gerard --project-name tina
-          cp tina-app/pubspec.yaml /tmp/tina_base/pubspec.yaml
+          cp pubspec.yaml /tmp/tina_base/pubspec.yaml
           rm -rf /tmp/tina_base/lib
-          cp -r tina-app/lib /tmp/tina_base/lib
-          cp tina-app/android/app/src/main/AndroidManifest.xml \
+          cp -r lib /tmp/tina_base/lib
+          cp android/app/src/main/AndroidManifest.xml \
              /tmp/tina_base/android/app/src/main/AndroidManifest.xml
 
       - name: Installer les dépendances
