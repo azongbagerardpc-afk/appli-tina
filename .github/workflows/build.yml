@@ -68,20 +68,21 @@ jobs:
           cat "$APP_GRADLE"
 
       - name: Intégrer l'icône Tina
+        continue-on-error: true
         run: |
           ICON="${GITHUB_WORKSPACE}/assets/icon.png"
+          file "$ICON" || echo "Fichier invalide"
           if [ -f "$ICON" ]; then
             for entry in "mipmap-mdpi:48" "mipmap-hdpi:72" "mipmap-xhdpi:96" "mipmap-xxhdpi:144" "mipmap-xxxhdpi:192"; do
               dir="${entry%%:*}"
               size="${entry##*:}"
               target="/tmp/tina_base/android/app/src/main/res/$dir"
               mkdir -p "$target"
-              convert "$ICON" -resize "${size}x${size}" "$target/ic_launcher.png"
-              convert "$ICON" -resize "${size}x${size}" "$target/ic_launcher_round.png"
+              convert "$ICON" -resize "${size}x${size}" "$target/ic_launcher.png" && \
+              convert "$ICON" -resize "${size}x${size}" "$target/ic_launcher_round.png" || \
+              echo "Échec resize $size"
             done
-            echo "Icônes Tina intégrées avec succès"
-          else
-            echo "Icône non trouvée, icônes par défaut conservées"
+            echo "Icônes Tina intégrées"
           fi
 
       - name: Installer les dépendances
