@@ -71,10 +71,6 @@ jobs:
         working-directory: /tmp/tina_base
         run: flutter pub get
 
-      - name: Générer les icônes
-        working-directory: /tmp/tina_base
-        run: dart run flutter_launcher_icons || true
-
       - name: Analyser le code Dart
         working-directory: /tmp/tina_base
         run: flutter analyze || true

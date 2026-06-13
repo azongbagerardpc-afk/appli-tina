@@ -1,22 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   static const Color primary = Color(0xFF00E676);
-  static const Color primaryDim = Color(0xFF00C853);
   static const Color background = Color(0xFF080810);
   static const Color surface = Color(0xFF111120);
   static const Color surfaceVariant = Color(0xFF1A1A2E);
   static const Color border = Color(0xFF252540);
 
   static ThemeData get darkTheme {
-    final base = GoogleFonts.poppinsTextTheme(
-      ThemeData.dark().textTheme,
-    ).apply(bodyColor: Colors.white, displayColor: Colors.white);
-
     return ThemeData(
       brightness: Brightness.dark,
-      textTheme: base,
       colorScheme: ColorScheme.dark(
         primary: primary,
         surface: surface,
@@ -38,29 +31,30 @@ class AppTheme {
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return GoogleFonts.poppins(
+            return const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
               color: primary,
             );
           }
-          return GoogleFonts.poppins(
+          return const TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w400,
             color: Colors.white38,
           );
         }),
       ),
-      appBarTheme: AppBarTheme(
-        backgroundColor: background,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF080810),
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.poppins(
+        titleTextStyle: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: Colors.white,
+          letterSpacing: 0.2,
         ),
-        iconTheme: const IconThemeData(color: Colors.white70),
+        iconTheme: IconThemeData(color: Colors.white70),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -94,25 +88,23 @@ class AppTheme {
           backgroundColor: primary,
           foregroundColor: Colors.black,
           elevation: 0,
-          textStyle: GoogleFonts.poppins(
-              fontSize: 14, fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14)),
-          padding:
-              const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         ),
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: surfaceVariant,
-        contentTextStyle: GoogleFonts.poppins(
-            color: Colors.white, fontSize: 13),
+        contentTextStyle: const TextStyle(color: Colors.white, fontSize: 13),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         behavior: SnackBarBehavior.floating,
       ),
-      dividerTheme: const DividerThemeData(
-        color: border,
-        thickness: 1,
-      ),
+      dividerTheme: const DividerThemeData(color: border, thickness: 1),
       useMaterial3: true,
     );
   }
