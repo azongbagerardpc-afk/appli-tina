@@ -30,14 +30,14 @@ class AppTheme {
         elevation: 0,
         height: 64,
         indicatorColor: primary.withOpacity(0.15),
-        iconTheme: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
             return const IconThemeData(color: primary, size: 22);
           }
           return const IconThemeData(color: Colors.white38, size: 22);
         }),
-        labelTextStyle: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
             return GoogleFonts.poppins(
               fontSize: 11,
               fontWeight: FontWeight.w600,
