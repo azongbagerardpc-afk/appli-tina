@@ -16,25 +16,28 @@ class _FootballScreenState extends State<FootballScreen>
   final SofascoreService _sofascore = SofascoreService();
   List<Match> _todayMatches = [];
   List<Match> _yesterdayMatches = [];
+  List<NewsItem> _news = [];
   bool _isLoading = true;
   late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _loadMatches();
+    _tabController = TabController(length: 3, vsync: this);
+    _loadAll();
   }
 
-  Future<void> _loadMatches() async {
+  Future<void> _loadAll() async {
     setState(() => _isLoading = true);
     final results = await Future.wait([
       _sofascore.getTodayMatches(),
       _sofascore.getYesterdayMatches(),
+      _sofascore.getNews(),
     ]);
     setState(() {
-      _todayMatches = results[0];
-      _yesterdayMatches = results[1];
+      _todayMatches = results[0] as List<Match>;
+      _yesterdayMatches = results[1] as List<Match>;
+      _news = results[2] as List<NewsItem>;
       _isLoading = false;
     });
   }
@@ -47,7 +50,7 @@ class _FootballScreenState extends State<FootballScreen>
         actions: [
           IconButton(
               icon: const Icon(Icons.refresh, size: 20),
-              onPressed: _loadMatches),
+              onPressed: _loadAll),
         ],
         bottom: TabBar(
           controller: _tabController,
@@ -57,6 +60,7 @@ class _FootballScreenState extends State<FootballScreen>
           tabs: const [
             Tab(text: "Aujourd'hui"),
             Tab(text: 'Hier'),
+            Tab(text: 'News'),
           ],
         ),
       ),
@@ -66,10 +70,9 @@ class _FootballScreenState extends State<FootballScreen>
           : TabBarView(
               controller: _tabController,
               children: [
-                _MatchList(
-                    matches: _todayMatches, onRefresh: _loadMatches),
-                _MatchList(
-                    matches: _yesterdayMatches, onRefresh: _loadMatches),
+                _MatchList(matches: _todayMatches, onRefresh: _loadAll),
+                _MatchList(matches: _yesterdayMatches, onRefresh: _loadAll),
+                _NewsList(news: _news, onRefresh: _loadAll),
               ],
             ),
     );
@@ -79,6 +82,209 @@ class _FootballScreenState extends State<FootballScreen>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+}
+
+class _NewsList extends StatelessWidget {
+  final List<NewsItem> news;
+  final Future<void> Function() onRefresh;
+  const _NewsList({required this.news, required this.onRefresh});
+
+  @override
+  Widget build(BuildContext context) {
+    if (news.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.newspaper, color: Colors.white12, size: 48),
+            SizedBox(height: 12),
+            Text('Aucune news disponible',
+                style: TextStyle(color: Colors.white38)),
+          ],
+        ),
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      color: AppTheme.primary,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(12),
+        itemCount: news.length,
+        itemBuilder: (ctx, i) {
+          final item = news[i];
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppTheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withOpacity(0.05)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.headline,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    height: 1.4,
+                  ),
+                ),
+                if (item.description != null && item.description!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    item.description!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 12,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () => Navigator.push(
+                    ctx,
+                    MaterialPageRoute(
+                      builder: (_) => _ScriptFromNewsScreen(news: item),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.auto_awesome,
+                          color: AppTheme.primary, size: 14),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'Générer un script',
+                        style: TextStyle(
+                            color: AppTheme.primary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ScriptFromNewsScreen extends StatefulWidget {
+  final NewsItem news;
+  const _ScriptFromNewsScreen({required this.news});
+
+  @override
+  State<_ScriptFromNewsScreen> createState() => _ScriptFromNewsScreenState();
+}
+
+class _ScriptFromNewsScreenState extends State<_ScriptFromNewsScreen> {
+  final GroqService _groq = GroqService();
+  String? _script;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _generate();
+  }
+
+  Future<void> _generate() async {
+    setState(() => _isLoading = true);
+    final topic = widget.news.description != null
+        ? '${widget.news.headline}. ${widget.news.description}'
+        : widget.news.headline;
+    final s = await _groq.generateScript(topic);
+    setState(() {
+      _script = s;
+      _isLoading = false;
+    });
+  }
+
+  void _copy() {
+    if (_script == null) return;
+    Clipboard.setData(ClipboardData(text: _script!));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Script copié'),
+        backgroundColor: AppTheme.primary,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Script', style: TextStyle(fontSize: 15)),
+        actions: [
+          if (!_isLoading && _script != null)
+            IconButton(icon: const Icon(Icons.copy), onPressed: _copy),
+          IconButton(
+              icon: const Icon(Icons.refresh, size: 20),
+              onPressed: _generate),
+        ],
+      ),
+      body: _isLoading
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: AppTheme.primary),
+                  SizedBox(height: 16),
+                  Text('Tina génère le script...',
+                      style: TextStyle(color: Colors.white54)),
+                ],
+              ),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceVariant,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: AppTheme.primary.withOpacity(0.2)),
+                    ),
+                    child: SelectableText(
+                      _script ?? 'Erreur lors de la génération.',
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 14, height: 1.65),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _copy,
+                      icon: const Icon(Icons.copy, size: 18),
+                      label: const Text('Copier le script'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+    );
   }
 }
 

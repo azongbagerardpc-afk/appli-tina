@@ -8,6 +8,7 @@ import '../services/storage_service.dart';
 import '../widgets/message_bubble.dart';
 import '../config/constants.dart';
 import '../config/theme.dart';
+import '../services/sofascore_service.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -29,6 +30,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   bool _autoSpeak = true;
   bool _showKeyboard = false;
   String _statusText = 'Appuie pour me parler';
+  String _liveContext = '';
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -59,6 +61,44 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     _checkApiKey();
     _initSpeech();
     _initTts();
+    _fetchLiveContext();
+  }
+
+  Future<void> _fetchLiveContext() async {
+    try {
+      final service = SofascoreService();
+      final results = await Future.wait([
+        service.getTodayMatches(),
+        service.getYesterdayMatches(),
+        service.getNews(),
+      ]);
+      final today = results[0] as List<Match>;
+      final yesterday = results[1] as List<Match>;
+      final news = results[2] as List<NewsItem>;
+
+      final buf = StringBuffer();
+
+      if (today.isNotEmpty) {
+        buf.writeln('Matchs du jour :');
+        for (final m in today.take(8)) {
+          buf.writeln('- ${m.homeTeam} ${m.scoreDisplay} ${m.awayTeam} (${m.tournament})');
+        }
+      }
+      if (yesterday.isNotEmpty) {
+        buf.writeln('Résultats d\'hier :');
+        for (final m in yesterday.where((m) => m.isFinished).take(6)) {
+          buf.writeln('- ${m.homeTeam} ${m.scoreDisplay} ${m.awayTeam} (${m.tournament})');
+        }
+      }
+      if (news.isNotEmpty) {
+        buf.writeln('Dernières news football :');
+        for (final n in news.take(8)) {
+          buf.writeln('- ${n.headline}');
+        }
+      }
+
+      if (mounted) setState(() => _liveContext = buf.toString());
+    } catch (_) {}
   }
 
   Future<void> _initSpeech() async {
@@ -185,6 +225,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     final reply = await _groqService.sendMessage(
       messages: _messages,
       systemPrompt: AppConstants.tinaSystemPrompt,
+      liveContext: _liveContext.isNotEmpty ? _liveContext : null,
     );
 
     final tinaMsg = ChatMessage(

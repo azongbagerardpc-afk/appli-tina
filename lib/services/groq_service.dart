@@ -8,8 +8,12 @@ class GroqService {
   Future<String?> sendMessage({
     required List<ChatMessage> messages,
     required String systemPrompt,
+    String? liveContext,
     int retryCount = 0,
   }) async {
+    final effectivePrompt = (liveContext != null && liveContext.isNotEmpty)
+        ? '$systemPrompt\n\nACTUALITÉS FOOTBALL EN COURS (mis à jour automatiquement) :\n$liveContext'
+        : systemPrompt;
     final apiKey = StorageService.getGroqApiKey();
     if (apiKey == null || apiKey.isEmpty) {
       return 'Clé API manquante. Appuie sur l\'icône clé pour la configurer.';
@@ -19,7 +23,7 @@ class GroqService {
         messages.length > 6 ? messages.sublist(messages.length - 6) : messages;
 
     final openAiMessages = [
-      {'role': 'system', 'content': systemPrompt},
+      {'role': 'system', 'content': effectivePrompt},
       ...recentMessages.map((m) => {
             'role': m.isUser ? 'user' : 'assistant',
             'content': m.content,
@@ -54,6 +58,7 @@ class GroqService {
           return sendMessage(
             messages: messages,
             systemPrompt: systemPrompt,
+            liveContext: liveContext,
             retryCount: retryCount + 1,
           );
         }
